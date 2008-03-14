@@ -10,8 +10,7 @@ class Control:
   parent = None
   processor = None
 
-  def __init__(self, parent, processor):
-    self.parent = parent
+  def __init__(self, processor):
     self.processor = processor
 
   def handleDirective(self, verb, line):
@@ -31,7 +30,18 @@ class Control:
 
 class BaseControl(Control):
   def handleDirective(self, verb, line):
-    if verb == "include":
+    if verb == "define":
+      parts = line.split(" ", 1);
+      key = parts[0]
+      if not self.processor.defines.has_key(key):
+        if len(parts) == 2:
+          value = self.processor.processDefines(parts[1])
+        else:
+          value = ""
+        self.processor.defines[key] = value
+      else:
+        print "  WARNING: attempted redefinition of " + key
+    elif verb == "include":
       if line.startswith('"') and line.endswith('"'):
         line = line[1:-1]
         dir = os.path.dirname(self.processor.state['file'])
@@ -43,7 +53,7 @@ class BaseControl(Control):
       else:
         raise IOError, "Missing include file " + line
     elif verb.startswith("if"):
-      control = IfControl(self, self.processor, verb, line)
+      control = IfControl(self.processor, verb, line)
       self.processor.pushController(control)
     else:
       Control.handleDirective(self, verb, line)
@@ -53,8 +63,8 @@ class IfControl(Control):
   displayed = False
   closed = False
 
-  def __init__(self, parent, processor, verb, line):
-    Control.__init__(self, parent, processor)
+  def __init__(self, processor, verb, line):
+    Control.__init__(self, processor)
     self.displaying = self.meetsCondition(verb[2:], line)
     self.displayed = self.displaying
     self.closed = False
@@ -73,7 +83,7 @@ class IfControl(Control):
       self.displayed = True
     elif verb == "endif":
       self.closed = True
-      self.processor.popController()
+      self.processor.popController(self)
     elif verb.startswith("elif"):
       if self.displayed:
         self.displaying = False
@@ -112,9 +122,12 @@ class PreProcessor:
     self.output.write(line)
 
   def pushController(self, controller):
+    controller.parent = self.state['controller']
     self.state['controller'] = controller
 
-  def popController(self):
+  def popController(self, controller):
+    if self.state['controller'] != controller:
+      raise IOError, "Popping controller not at the top of the stack"
     self.state['controller'].close()
     self.state['controller'] = self.state['controller'].parent
 
@@ -129,7 +142,7 @@ class PreProcessor:
     changed = True
     while changed:
       changed = False
-      for (key, value) in self.defines:
+      for (key, value) in self.defines.items():
         pos = line.find(key)
         while pos >= 0:
           changed = True
@@ -175,13 +188,19 @@ class PreProcessor:
     self.states.append(self.state)
     self.state = {}
     self.state['marker'] = marker,
-    self.state['controller'] = BaseControl(None, self)
+    self.state['controller'] = BaseControl(self)
     self.state['file'] = file
-    for line in fp:
-      self.processLine(line)
-    fp.close()
+    pos = 0
+    try:
+      for line in fp:
+        pos += 1
+        self.processLine(line)
+      fp.close()
+    except:
+      print "  ERROR: failure processing line", pos, "of", file
+      raise
     while self.state['controller']:
-      self.popController()
+      self.popController(self.state['controller'])
     self.state = self.states.pop()
 
   def close(self):
