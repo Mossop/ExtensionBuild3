@@ -27,7 +27,7 @@ class Control:
       self.processor.write(self.processor.processDefines(line))
 
   def close(self):
-    True
+    pass
 
 class BaseControl(Control):
   def handleDirective(self, verb, line):
@@ -42,9 +42,54 @@ class BaseControl(Control):
         self.processor.processFile(file)
       else:
         raise IOError, "Missing include file " + line
+    elif verb.startswith("if"):
+      control = IfControl(self, self.processor, verb, line)
+      self.processor.pushController(control)
     else:
       Control.handleDirective(self, verb, line)
       
+class IfControl(Control):
+  displaying = False
+  displayed = False
+  closed = False
+
+  def __init__(self, parent, processor, verb, line):
+    Control.__init__(self, parent, processor)
+    self.displaying = self.meetsCondition(verb[2:], line)
+    self.displayed = self.displaying
+    self.closed = False
+
+  def meetsCondition(self, type, line):
+    if type == "def":
+      return self.processor.isDefined(line)
+    elif type == "ndef":
+      return not self.processor.isDefined(line)
+    else:
+      raise IOError, "Unknown if codition " + type + " " + line
+
+  def handleDirective(self, verb, line):
+    if verb == "else":
+      self.displaying = not self.displayed
+      self.displayed = True
+    elif verb == "endif":
+      self.closed = True
+      self.processor.popController()
+    elif verb.startswith("elif"):
+      if self.displayed:
+        self.displaying = False
+      else:
+        self.displaying = self.meetsCondition(verb[4:], line)
+        self.displayed = self.displaying
+    else:
+      Control.handleDirective(self, verb, line)
+    
+  def handleLine(self, line):
+    if self.displaying:
+      Control.handleLine(self, line)
+
+  def close(self):
+    if not self.closed:
+      raise IOError, "Unexpected end of if definition"
 
 class PreProcessor:
   states = None
@@ -109,12 +154,13 @@ class PreProcessor:
 
   def processLine(self, line):
     if line.startswith(self.state['marker']):
-      line = line[len(self.state['marker']):]
+      line = line[len(self.state['marker']):].rstrip()
       parts = line.split(" ", 1)
-      if (len(parts) == 2) and (parts[0]):
-        (verb, rest) = parts
-        rest = rest.strip()
-        self.state['controller'].handleDirective(verb, rest)
+      if parts[0]:
+        if len(parts) == 2:
+          self.state['controller'].handleDirective(parts[0], parts[1].strip())
+        else:
+          self.state['controller'].handleDirective(parts[0], None)
     else:
       self.state['controller'].handleLine(line)
 
