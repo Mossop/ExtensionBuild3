@@ -149,6 +149,7 @@ class XPIBuilder(preprocessor.Resolver):
       os.mkdir(targetdir)
     for name in os.listdir(sourcedir):
       if (fnmatch.fnmatch(name, "*.pspimage") or      # High quality source images
+          fnmatch.fnmatch(name, "*.psd") or           # High quality source images
           fnmatch.fnmatch(name, "Thumbs.db") or       # Windows crap
           fnmatch.fnmatch(name, ".*") or              # Hidden files
           fnmatch.fnmatch(name, "*~") or              # Backup files
