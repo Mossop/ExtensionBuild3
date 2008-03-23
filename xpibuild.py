@@ -1,5 +1,25 @@
-import os, shutil, subprocess, fnmatch, zipfile, preprocessor
+import os, sys, shutil, fnmatch, zipfile, preprocessor, popen2
 import xml.parsers.expat, ConfigParser
+
+def execProcess(command, args):
+  cmd = []
+  cmd.append("'" + command + "'")
+  cmd.extend(map(lambda x: "'" + x + "'", args))
+  cmd = " ".join(cmd)
+  process = popen2.Popen4(cmd)
+  stdout = sys.stdout
+  out = process.fromchild
+  while process.poll() == -1:
+    line = out.readline().rstrip()
+    if len(line) > 0:
+      print >> stdout, line
+  # read in the last lines that happened between the last -1 poll and the
+  # process finishing
+  for line in out:
+    line = line.rstrip()
+    if len(line) > 0:
+      print >> stdout, line
+  return process.poll()
 
 def parseProperties(fp):
   properties = {}
@@ -207,7 +227,7 @@ class XPIBuilder(preprocessor.Resolver):
     if not os.path.exists(targetdir):
       os.makedirs(targetdir)
 
-    xpidlargs = [ self.xpidl, "-m", "typelib", "-w", "-v" ]
+    xpidlargs = [ "-m", "typelib", "-w", "-v" ]
     for include in self.idlincludes:
       xpidlargs += [ "-I", include ]
     xpidlargs += [ "-e" ]
@@ -223,7 +243,7 @@ class XPIBuilder(preprocessor.Resolver):
         if not self.__isNewer([ source ], target):
           continue
         print "Compiling " + target
-        retcode = subprocess.call(xpidlargs + [ target, source ])
+        retcode = execProcess(self.xpidl, xpidlargs + [ target, source ])
         if retcode != 0:
           raise IOError, "Error compiling " + source
       elif fnmatch.fnmatch(file, "*.xpt"):
@@ -237,7 +257,7 @@ class XPIBuilder(preprocessor.Resolver):
         target = os.path.join(targetdir, self.settings['globalxpt'] + ".xpt")
         if self.__isNewer(xptfiles, target):
           print "Packaging " + target
-          retcode = subprocess.call([ self.xptlink, target ] + xptfiles)
+          retcode = execProcess(self.xptlink, [ target ] + xptfiles)
           if retcode != 0:
             raise IOError, "Error creating " + target
       else:
