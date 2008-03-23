@@ -176,9 +176,15 @@ class XPIBuilder(preprocessor.Resolver):
             fnmatch.fnmatch(name, "*.manifest") or
             fnmatch.fnmatch(name, "*.css")):
           print "Preprocessing " + target
-          processor = preprocessor.PreProcessor(target, self)
-          processor.processFile(source);
-          processor.close();
+          try:
+            processor = preprocessor.PreProcessor(target, self)
+            processor.processFile(source);
+          except:
+            processor.close()
+            os.remove(target)
+            raise
+          else:
+            processor.close()
           if len(processor.sources) > 1:
             dirconfig.set("dependencies", name, ",".join(processor.sources))
             newconfig = True
@@ -217,7 +223,9 @@ class XPIBuilder(preprocessor.Resolver):
         if not self.__isNewer([ source ], target):
           continue
         print "Compiling " + target
-        subprocess.check_call(xpidlargs + [ target, source ])
+        retcode = subprocess.call(xpidlargs + [ target, source ])
+        if retcode != 0:
+          raise IOError, "Error compiling " + source
       elif fnmatch.fnmatch(file, "*.xpt"):
         if source not in xptfiles:
           xptfiles += [ source ]
@@ -229,7 +237,9 @@ class XPIBuilder(preprocessor.Resolver):
         target = os.path.join(targetdir, self.settings['globalxpt'] + ".xpt")
         if self.__isNewer(xptfiles, target):
           print "Packaging " + target
-          subprocess.check_call([ self.xptlink, target ] + xptfiles)
+          retcode = subprocess.call([ self.xptlink, target ] + xptfiles)
+          if retcode != 0:
+            raise IOError, "Error creating " + target
       else:
         for file in xptfiles:
           target = os.path.join(targetdir, os.path.basename(file))

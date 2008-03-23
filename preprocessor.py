@@ -1,4 +1,4 @@
-import os,fnmatch
+import os, fnmatch
 
 class Resolver:
   def isDefined(self, key):
@@ -187,7 +187,7 @@ class PreProcessor:
     fp = open(file)
     self.states.append(self.state)
     self.state = {}
-    self.state['marker'] = marker,
+    self.state['marker'] = marker
     self.state['controller'] = BaseControl(self)
     self.state['file'] = file
     pos = 0
