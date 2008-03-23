@@ -50,9 +50,11 @@ class XPIBuilder(preprocessor.Resolver):
   buildid = None
   release = False
 
-  def __init__(self):
-    self.basedir = os.path.abspath(os.path.realpath(os.path.dirname(os.path.dirname(__file__))))
-    self.mozillasdk = os.path.abspath(os.path.join(self.basedir, "..", "..", "gecko-sdk"))
+  def __init__(self, basedir = None):
+    if basedir:
+      self.basedir = os.path.abspath(os.path.realpath(basedir))
+    else:
+      self.basedir = os.path.abspath(os.path.realpath(os.path.dirname(os.path.dirname(__file__))))
     self.defines = {}
 
   def init(self):
@@ -63,6 +65,8 @@ class XPIBuilder(preprocessor.Resolver):
     else:
       raise Exception, "Unknown build type or missing properties"
 
+    if not self.mozillasdk:
+      self.mozillasdk = os.path.abspath(os.path.join(self.basedir, "..", "..", "gecko-sdk"))
     if not self.srcdir:
       self.srcdir = os.path.join(self.basedir, "src")
     if not self.builddir:
