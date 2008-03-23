@@ -247,7 +247,7 @@ class XPIBuilder(preprocessor.Resolver):
       if os.path.exists(jar):
         os.remove(jar)
       print "Packaging " + jar
-      zipwriter = zipfile.ZipFile(jar, "w")
+      zipwriter = zipfile.ZipFile(jar, "w", zipfile.ZIP_STORED)
       for file in os.listdir(sourcedir):
         if (fnmatch.fnmatch(file, "*.manifest") or
             fnmatch.fnmatch(file, "*.jar") or
@@ -293,7 +293,7 @@ class XPIBuilder(preprocessor.Resolver):
     if os.path.exists(package):
       os.remove(package)
     print "Packaging " + package
-    zipwriter = zipfile.ZipFile(package, "w")
+    zipwriter = zipfile.ZipFile(package, "w", zipfile.ZIP_DEFLATED)
     self.__zipTree(zipwriter, self.bindir, "")
     zipwriter.close()
 
