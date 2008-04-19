@@ -195,6 +195,7 @@ class XPIBuilder(preprocessor.Resolver):
         if not self.__isNewer(sources, target):
           continue
         if (fnmatch.fnmatch(name, "*.js") or
+            fnmatch.fnmatch(name, "*.jsm") or
             fnmatch.fnmatch(name, "*.xul") or
             fnmatch.fnmatch(name, "*.xml") or
             fnmatch.fnmatch(name, "*.rdf") or
