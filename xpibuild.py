@@ -66,7 +66,10 @@ class XPIBuilder(preprocessor.Resolver):
       raise Exception, "Unknown build type or missing properties"
 
     if not self.mozillasdk:
-      self.mozillasdk = os.path.abspath(os.path.join(self.basedir, "..", "..", "gecko-sdk"))
+      if "GECKO_SDK" in os.environ.keys():
+        self.mozillasdk = os.environ["GECKO_SDK"]
+      else:
+        self.mozillasdk = os.path.abspath(os.path.join(self.basedir, "..", "..", "gecko-sdk"))
     if not self.srcdir:
       self.srcdir = os.path.join(self.basedir, "src")
     if not self.builddir:
