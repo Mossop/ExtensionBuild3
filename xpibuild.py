@@ -82,7 +82,10 @@ class XPIBuilder(preprocessor.Resolver):
     if not self.xptlink:
       self.xptlink = os.path.join(self.mozillasdk, "bin", "xpt_link")
     if not self.xpidl:
-      self.xpidl = os.path.join(self.mozillasdk, "bin", "xpidl")
+      if os.path.exists(os.path.join(self.mozillasdk, "bin", "xpidl")):
+        self.xpidl = os.path.join(self.mozillasdk, "bin", "xpidl")
+      elif os.path.exists(os.path.join(self.mozillasdk, "host", "bin", "host_xpidl")):
+        self.xpidl = os.path.join(self.mozillasdk, "host", "bin", "host_xpidl")
     if not self.idlincludes:
       self.idlincludes = [ os.path.join(self.mozillasdk, "idl"), os.path.join(self.srcdir, "components") ]
 
