@@ -90,7 +90,7 @@ class XPIBuilder(preprocessor.Resolver):
     if self.settings.has_key('chromejar'):
       self.settings['chromebase'] = 'jar:chrome/' + self.settings['chromejar'] + '.jar!'
     else:
-      self.settings['chromebase'] = 'file:chrome'
+      self.settings['chromebase'] = 'chrome'
 
     if self.buildid:
       self.settings['buildid'] = self.buildid
